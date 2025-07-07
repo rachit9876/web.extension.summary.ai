@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Page Summarizer",
+  "version": "1.0",
+  "description": "Summarize webpages and ask questions using Gemini API",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "run_at": "document_end"
+  }]
+}

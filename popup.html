@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 450px;
+      height: 480px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      overflow: hidden;
+    }
+    
+    .container {
+      background: rgb(162, 162, 162);
+      margin: 0;
+      padding: 16px;
+      border-radius: 0;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      height: 100vh;
+      overflow-y: auto;
+    }
+    
+    .section {
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    
+    .btn-inline {
+      width: auto;
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 4px;
+      background: #f7fafc;
+      color: #4a5568;
+      border: 1px solid #e2e8f0;
+    }
+    
+    .btn-inline:hover {
+      background: #edf2f7;
+      border-color: #cbd5e0;
+    }
+    
+    .input-group {
+      position: relative;
+      margin-bottom: 8px;
+    }
+    
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 13px;
+      transition: all 0.2s ease;
+      background: #f7fafc;
+    }
+    
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+    
+    button {
+      width: 100%;
+      padding: 10px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #000000 0%, #000000 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-secondary {
+      background: #f7fafc;
+      color: #4a5568;
+      border: 2px solid #e2e8f0;
+    }
+    
+    .btn-secondary:hover {
+      background: #edf2f7;
+      border-color: #cbd5e0;
+    }
+    
+    .result-box {
+      background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 8px;
+      max-height: 280px;
+      overflow-y: auto;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+    }
+    
+    .result-box:empty {
+      display: none;
+    }
+    
+    .loading {
+      color: #667eea;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .loading::before {
+      content: "";
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e2e8f0;
+      border-top: 2px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .icon {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 16px;
+    }
+    
+    .tab {
+      flex: 1;
+      padding: 10px 12px;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      background: #f7fafc;
+      color: #718096;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      border-radius: 6px 6px 0 0;
+      margin-right: 2px;
+    }
+    
+    .tab:last-child {
+      margin-right: 0;
+    }
+    
+    .tab.active {
+      background: white;
+      color: #667eea;
+      border-bottom: 2px solid #667eea;
+    }
+    
+    .tab:hover:not(.active) {
+      background: #edf2f7;
+      color: #4a5568;
+    }
+    
+    .tab-content {
+      display: none;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .result-box ul {
+      padding-left: 20px;
+    }
+    
+    .result-box li {
+      margin-bottom: 4px;
+    }
+    
+    .result-box h1, .result-box h2, .result-box h3 {
+      color: #2d3748;
+      margin: 12px 0 8px 0;
+      font-weight: 600;
+    }
+    
+    .result-box h1 { font-size: 18px; }
+    .result-box h2 { font-size: 16px; }
+    .result-box h3 { font-size: 14px; }
+    
+    .result-box p {
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+    
+    .result-box strong {
+      color: #2d3748;
+      font-weight: 600;
+    }
+    
+    .result-box code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #e53e3e;
+    }
+    
+    .result-box pre {
+      background: #1a202c;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 8px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+    }
+    
+    .result-box blockquote {
+      border-left: 4px solid #667eea;
+      padding-left: 12px;
+      margin: 8px 0;
+      color: #4a5568;
+      font-style: italic;
+    }
+    
+    .result-box table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+    }
+    
+    .result-box th, .result-box td {
+      border: 1px solid #e2e8f0;
+      padding: 8px;
+      text-align: left;
+    }
+    
+    .result-box th {
+      background: #f7fafc;
+      font-weight: 600;
+    }
+    
+    .error {
+      color: #e53e3e;
+      background: #fed7d7;
+      border-color: #feb2b2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="section">
+      <div class="section-title">
+        Gemini API ⤵ 
+        <button id="changeApi" class="btn-inline">
+          💾 Save API
+        </button>
+      </div>
+      <div class="input-group">
+        <input type="password" id="apiKey" placeholder="Enter your Gemini API Key">
+      </div>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab active" data-tab="summary">📋 Summary</button>
+      <button class="tab" data-tab="question">❓ Ask</button>
+    </div>
+    
+    <div id="summary-tab" class="tab-content active">
+      <button id="summarize" class="btn-primary">
+        Generate Summary
+      </button>
+      <div id="summary" class="result-box"></div>
+    </div>
+    
+    <div id="question-tab" class="tab-content">
+      <div class="input-group">
+        <input type="text" id="question" placeholder="What would you like to know about this page?">
+      </div>
+      <button id="askQuestion" class="btn-primary">
+         Get Answer
+      </button>
+      <div id="answer" class="result-box"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
