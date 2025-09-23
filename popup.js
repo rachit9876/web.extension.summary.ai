@@ -2,13 +2,8 @@ let apiKey = '';
 let pageContent = '';
 let currentUrl = '';
 
-// Load saved API key and cached results
-chrome.storage.sync.get(['geminiApiKey'], (result) => {
-  if (result.geminiApiKey) {
-    apiKey = result.geminiApiKey;
-    document.getElementById('apiKey').value = apiKey;
-  }
-});
+// Set OpenRouter API key
+apiKey = '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';
 
 // Load cached results for current URL
 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
@@ -59,17 +54,11 @@ chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
   });
 });
 
-document.getElementById('changeApi').addEventListener('click', () => {
-  apiKey = document.getElementById('apiKey').value;
-  if (apiKey) {
-    chrome.storage.sync.set({geminiApiKey: apiKey});
-    alert('API Key saved!');
-  }
-});
+
 
 document.getElementById('summarize').addEventListener('click', async () => {
   if (!apiKey) {
-    alert('Please enter your Gemini API key first');
+    alert('API key not configured');
     return;
   }
   
@@ -78,7 +67,7 @@ document.getElementById('summarize').addEventListener('click', async () => {
   
   try {
     await getPageContentIfNeeded();
-    const summary = await callGeminiAPI(`Please provide a well-structured summary of this webpage using markdown formatting. Use headers, bullet points, and proper formatting. Focus on key facts and main points:\n\n${pageContent}`);
+    const summary = await callOpenRouterAPI(`Please provide a well-structured summary of this webpage using markdown formatting. Use headers, bullet points, and proper formatting. Focus on key facts and main points:\n\n${pageContent}`);
     const formattedSummary = formatResponse(summary);
     summaryDiv.innerHTML = formattedSummary;
     chrome.storage.session.set({[`summary_${currentUrl}`]: formattedSummary});
@@ -90,7 +79,7 @@ document.getElementById('summarize').addEventListener('click', async () => {
 document.getElementById('askQuestion').addEventListener('click', async () => {
   const question = document.getElementById('question').value;
   if (!question || !apiKey) {
-    alert('Please enter both API key and question');
+    alert('Please enter a question');
     return;
   }
   
@@ -99,7 +88,7 @@ document.getElementById('askQuestion').addEventListener('click', async () => {
   
   try {
     await getPageContentIfNeeded();
-    const answer = await callGeminiAPI(`Based on this webpage content, provide a well-formatted answer using markdown. Use headers, bullet points, code blocks, and proper formatting where appropriate.\n\nQuestion: ${question}\n\nWebpage content:\n${pageContent}`);
+    const answer = await callOpenRouterAPI(`Based on this webpage content, provide a well-formatted answer using markdown. Use headers, bullet points, code blocks, and proper formatting where appropriate.\n\nQuestion: ${question}\n\nWebpage content:\n${pageContent}`);
     const formattedAnswer = formatResponse(answer);
     answerDiv.innerHTML = formattedAnswer;
     chrome.storage.session.set({
@@ -131,19 +120,19 @@ async function getPageContentIfNeeded() {
 }
 
 function formatResponse(text) {
-  try {
-    // Use marked.js if available, otherwise fallback to basic formatting
-    if (typeof marked !== 'undefined') {
-      return marked.parse(text);
-    }
-    return basicMarkdownFormat(text);
-  } catch (error) {
-    return basicMarkdownFormat(text);
-  }
+  // Decode HTML entities first
+  text = text.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+  
+  // Always use basicMarkdownFormat for consistency
+  return basicMarkdownFormat(text);
 }
 
 function basicMarkdownFormat(text) {
   return text
+    // Images
+    .replace(/!\[([^\]]*)\]\(([^\)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;height:auto;">')
+    // Links
+    .replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>')
     // Headers
     .replace(/^### (.*$)/gm, '<h3>$1</h3>')
     .replace(/^## (.*$)/gm, '<h2>$1</h2>')
@@ -155,28 +144,32 @@ function basicMarkdownFormat(text) {
     .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     // Lists
-    .replace(/^\* (.*$)/gm, '<li>$1</li>')
-    .replace(/^- (.*$)/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/^[\*\-] (.*)$/gm, '<li>$1</li>')
+    .replace(/^\d+\. (.*)$/gm, '<li>$1</li>')
+    .replace(/((?:<li>.*<\/li>\s*)+)/g, '<ul>$1</ul>')
+    // Blockquotes
+    .replace(/^> (.*)$/gm, '<blockquote>$1</blockquote>')
     // Line breaks
     .replace(/\n\n/g, '</p><p>')
-    .replace(/^(.+)$/gm, '<p>$1</p>')
+    .replace(/^(?!<[h1-6ul]|<blockquote|<img)(.+)$/gm, '<p>$1</p>')
     // Clean up
     .replace(/<p><\/p>/g, '')
-    .replace(/<p>(<h[1-6]>)/g, '$1')
-    .replace(/(<\/h[1-6]>)<\/p>/g, '$1')
-    .replace(/<p>(<ul>)/g, '$1')
-    .replace(/(<\/ul>)<\/p>/g, '$1');
+    .replace(/<p>(<[h1-6ul])/g, '$1')
+    .replace(/(<\/[h1-6ul]>)<\/p>/g, '$1')
+    .replace(/<p>(<img)/g, '$1')
+    .replace(/(<\/img>)<\/p>/g, '$1');
 }
 
-async function callGeminiAPI(prompt) {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+async function callOpenRouterAPI(prompt) {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
-      contents: [{
-        parts: [{ text: prompt }]
-      }]
+      model: 'meta-llama/llama-3.2-3b-instruct:free',
+      messages: [{ role: 'user', content: prompt }]
     })
   });
   
@@ -186,5 +179,5 @@ async function callGeminiAPI(prompt) {
   }
   
   const data = await response.json();
-  return data.candidates[0].content.parts[0].text;
+  return data.choices[0].message.content;
 }

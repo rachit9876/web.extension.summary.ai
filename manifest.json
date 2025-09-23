@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Page Summarizer",
   "version": "1.0",
-  "description": "Summarize webpages and ask questions using Gemini API",
+  "description": "Summarize webpages and ask questions using OpenRouter API",
   "permissions": ["activeTab", "storage"],
   "action": {
     "default_popup": "popup.html"
